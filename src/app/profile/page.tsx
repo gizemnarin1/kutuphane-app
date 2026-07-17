@@ -10,8 +10,5 @@ export default async function ProfilePage() {
     redirect('/login')
   }
 
-  const fullName = user.user_metadata?.full_name || 'Kullanıcı'
-  const email = user.email || ''
-
-  return <ProfileClient fullName={fullName} email={email} />
+  return <ProfileClient initialUser={user} />
 }
