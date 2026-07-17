@@ -1,71 +1,108 @@
-import { createClient } from '@/utils/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { createClient } from '@/utils/supabase/client'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import FinishBookButton from '@/components/FinishBookButton'
 import styles from './page.module.css'
+import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 
-export default async function Home() {
-  const supabase = await createClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
+export default function Home() {
+  const [user, setUser] = useState<any>(null)
+  const [currentlyReading, setCurrentlyReading] = useState<any[]>([])
+  const [thisMonthBooks, setThisMonthBooks] = useState<any[]>([])
+  const [thisYearReadCount, setThisYearReadCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
+  const supabase = createClient()
 
-  if (error || !user) {
-    redirect('/login')
-  }
+  useEffect(() => {
+    async function fetchData() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/login')
+        return
+      }
+      setUser(user)
 
-  // Fetch currently reading books
-  const { data: currentlyReading } = await supabase
-    .from('books')
-    .select('id, title, cover_url')
-    .eq('user_id', user.id)
-    .eq('status', 'Şu an Okuyorum')
+      const { data: activeBooks } = await supabase
+        .from('books')
+        .select('id, title, cover_url')
+        .eq('user_id', user.id)
+        .eq('status', 'Şu an Okuyorum')
 
-  // Fetch read books this month
-  const currentMonth = new Date().getMonth()
-  const currentYear = new Date().getFullYear()
+      setCurrentlyReading(activeBooks || [])
 
-  const { data: readBooks } = await supabase
-    .from('books')
-    .select('id, title, cover_url, read_date')
-    .eq('user_id', user.id)
-    .eq('is_read', true)
-    .not('read_date', 'is', null)
+      const currentMonth = new Date().getMonth()
+      const currentYear = new Date().getFullYear()
 
-  const thisMonthBooks = readBooks?.filter((b: any) => {
-    if (!b.read_date) return false
-    const date = new Date(b.read_date)
-    return date.getMonth() === currentMonth && date.getFullYear() === currentYear
-  }) || []
+      const { data: readBooks } = await supabase
+        .from('books')
+        .select('id, title, cover_url, read_date')
+        .eq('user_id', user.id)
+        .eq('is_read', true)
+        .not('read_date', 'is', null)
 
-  const thisMonthReadCount = thisMonthBooks.length
+      const monthBooks = readBooks?.filter((b: any) => {
+        if (!b.read_date) return false
+        const date = new Date(b.read_date)
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear
+      }) || []
 
-  // Fetch yearly goal
-  const { data: goalData } = await supabase
-    .from('reading_goals')
-    .select('yearly_goal')
-    .eq('user_id', user.id)
-    .eq('year', currentYear)
-    .single()
+      setThisMonthBooks(monthBooks)
 
-  const yearlyGoal = goalData?.yearly_goal || "Belirlenmedi"
-  
-  // Total read this year
-  const thisYearReadCount = readBooks?.filter((b: any) => {
-    if (!b.read_date) return false
-    return new Date(b.read_date).getFullYear() === currentYear
-  }).length || 0
+      const yearBooksCount = readBooks?.filter((b: any) => {
+        if (!b.read_date) return false
+        return new Date(b.read_date).getFullYear() === currentYear
+      }).length || 0
+
+      setThisYearReadCount(yearBooksCount)
+      setLoading(false)
+    }
+
+    fetchData()
+  }, [supabase, router])
+
+  if (loading || !user) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Yükleniyor...</div>
 
   const fullName = user.user_metadata?.full_name || user.email?.split('@')[0]
+  const currentYear = new Date().getFullYear()
+  const monthName = new Date().toLocaleString('tr-TR', { month: 'long' })
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  }
 
   return (
     <div className="container" style={{ paddingBottom: '2rem' }}>
-      <header className={styles.header}>
-        <h1>Kütüphanem</h1>
-        <p>Hoş geldin, {fullName}</p>
+      <header className={styles.header} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <Image src="/logo.png" alt="Logo" width={50} height={50} style={{ borderRadius: '12px' }} />
+        <div>
+          <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Kütüphanem</h1>
+          <p style={{ margin: 0, color: 'var(--text-muted)' }}>Hoş geldin, {fullName}</p>
+        </div>
       </header>
 
-      <main className={styles.main}>
-        {currentlyReading && currentlyReading.length > 0 && (
-          <div className={`glass ${styles.statsCard}`} style={{ borderColor: 'var(--primary)', marginBottom: '1.5rem' }}>
+      <motion.main 
+        className={styles.main}
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+      >
+        {currentlyReading.length > 0 && (
+          <motion.div variants={itemVariants} className={`glass ${styles.statsCard}`} style={{ borderColor: 'var(--primary)', marginBottom: '1.5rem' }}>
             <h2 style={{ color: 'var(--primary)', marginBottom: '1rem' }}>Şu an Okuyorum</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '1rem' }}>
               {currentlyReading.map((book: any) => (
@@ -88,22 +125,22 @@ export default async function Home() {
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
 
-        <div className={`glass ${styles.statsCard}`}>
-          <h2>{currentYear} Okuma Hedefi</h2>
-          <p>{thisYearReadCount} / {yearlyGoal}</p>
-          <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-            Yıllık hedefinizi veritabanından güncelleyebilirsiniz.
+        <motion.div variants={itemVariants} className={`glass ${styles.statsCard}`}>
+          <h2>{currentYear} Yılı Okunanları</h2>
+          <p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary)', margin: '0.5rem 0' }}>{thisYearReadCount}</p>
+          <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+            Bu yıl okuduğunuz toplam kitap sayısı.
           </div>
-        </div>
+        </motion.div>
 
-        <div className={`glass ${styles.statsCard}`}>
-          <h2>Bu Ay Okunanlar</h2>
-          <p>{thisMonthReadCount} Kitap</p>
+        <motion.div variants={itemVariants} className={`glass ${styles.statsCard}`}>
+          <h2>{monthName} Okunanları</h2>
+          <p>{thisMonthBooks.length} Kitap</p>
 
-          {thisMonthBooks.length > 0 && (
+          {thisMonthBooks.length > 0 ? (
             <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '10px 0', marginTop: '1rem' }}>
               {thisMonthBooks.map((book: any) => (
                 <div key={book.id} style={{ flex: '0 0 auto', width: '80px' }}>
@@ -123,9 +160,11 @@ export default async function Home() {
                 </div>
               ))}
             </div>
+          ) : (
+             <div style={{ marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>Bu ay henüz kitap bitirmediniz.</div>
           )}
-        </div>
-      </main>
+        </motion.div>
+      </motion.main>
     </div>
   )
 }

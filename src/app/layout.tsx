@@ -42,12 +42,14 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider>
-          <div style={{ paddingBottom: '70px', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <PageTransition>
-              {children}
-            </PageTransition>
+          <div className="layout">
+            <main className="main-content">
+              <PageTransition>
+                {children}
+              </PageTransition>
+            </main>
+            <BottomNav />
           </div>
-          <BottomNav />
         </ThemeProvider>
       </body>
     </html>

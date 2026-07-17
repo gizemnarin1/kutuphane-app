@@ -6,6 +6,7 @@ import { Camera, Search } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { Html5QrcodeScanner } from 'html5-qrcode'
 import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
 import styles from './add.module.css'
 
 export default function AddForm({ userId }: { userId: string }) {
@@ -26,24 +27,32 @@ export default function AddForm({ userId }: { userId: string }) {
 
   useEffect(() => {
     if (scanning) {
-      const scanner = new Html5QrcodeScanner(
-        "reader",
-        { fps: 10, qrbox: { width: 250, height: 150 } },
-        false
-      )
-      
-      scanner.render((decodedText) => {
-        scanner.clear()
-        setScanning(false)
-        setQuery(decodedText)
-        searchGoogleBooks(decodedText)
-      }, (error) => {
-        console.warn(error)
-      })
+      setTimeout(() => {
+        try {
+          const scanner = new Html5QrcodeScanner(
+            "reader",
+            { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 },
+            false
+          )
+          
+          scanner.render((decodedText) => {
+            scanner.clear()
+            setScanning(false)
+            setQuery(decodedText)
+            searchGoogleBooks(decodedText)
+          }, (error) => {
+            // Ignore
+          })
 
-      return () => {
-        scanner.clear().catch(console.error)
-      }
+          return () => {
+            scanner.clear().catch(e => console.error(e))
+          }
+        } catch (e) {
+          console.error("Camera init error:", e)
+          alert("Kamera başlatılamadı. Lütfen izinleri kontrol edin.")
+          setScanning(false)
+        }
+      }, 100)
     }
   }, [scanning])
 
@@ -59,26 +68,20 @@ export default function AddForm({ userId }: { userId: string }) {
 
       let foundItems: any[] = []
 
-      // 1. Önce Google Books API'yi dene
       try {
         const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${qParam}&maxResults=10`)
         if (res.ok) {
           const data = await res.json()
           foundItems = data.items || []
         }
-      } catch (e) {
-        console.warn('Google Books fetch error:', e)
-      }
+      } catch (e) {}
 
-      // 2. Google Books sonuç bulamazsa veya Kota (429) dolduysa OpenLibrary'e geç
       if (foundItems.length === 0) {
-        console.log('OpenLibrary Fallback kullanılıyor...')
         try {
           const olRes = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(cleanQuery)}&limit=10`)
           if (olRes.ok) {
             const olData = await olRes.json()
             if (olData.docs && olData.docs.length > 0) {
-              // OpenLibrary formatını Google Books formatına çevir (Arayüz bozulmasın diye)
               foundItems = olData.docs.map((doc: any) => ({
                 id: doc.key || Math.random().toString(),
                 volumeInfo: {
@@ -90,18 +93,15 @@ export default function AddForm({ userId }: { userId: string }) {
               }))
             }
           }
-        } catch (e) {
-          console.warn('OpenLibrary fetch error:', e)
-        }
+        } catch (e) {}
       }
 
       setResults(foundItems)
 
       if (foundItems.length === 0) {
-        alert('Bu aramayla eşleşen kitap bulunamadı. Lütfen farklı kelimelerle veya yazar adıyla tekrar deneyin.')
+        alert('Bu aramayla eşleşen kitap bulunamadı. Lütfen farklı kelimelerle deneyin.')
       }
     } catch (err) {
-      console.error('Genel Arama Hatası:', err)
       alert('Arama sırasında beklenmedik bir hata oluştu.')
     } finally {
       setLoading(false)
@@ -127,7 +127,6 @@ export default function AddForm({ userId }: { userId: string }) {
     const volumeInfo = selectedBook.volumeInfo
     const coverUrl = volumeInfo.imageLinks?.thumbnail?.replace('http:', 'https:') || null
     
-    // Find ISBN 13 or 10
     const isbnObj = volumeInfo.industryIdentifiers?.find((id: any) => id.type === 'ISBN_13') || 
                     volumeInfo.industryIdentifiers?.find((id: any) => id.type === 'ISBN_10')
     const isbn = isbnObj ? isbnObj.identifier : null
@@ -152,13 +151,27 @@ export default function AddForm({ userId }: { userId: string }) {
       router.push('/library')
       router.refresh()
     } catch (err: any) {
-      console.error(err)
       alert('Kitap eklenirken hata: ' + err.message)
     }
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  }
+
   return (
     <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', marginTop: '1rem' }}>
+        <Image src="/logo.png" alt="Logo" width={40} height={40} style={{ borderRadius: '10px' }} />
+        <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Kitap Ekle</h1>
+      </div>
+
       <form onSubmit={handleSearch} className={styles.searchForm}>
         <input 
           type="text" 
@@ -183,44 +196,50 @@ export default function AddForm({ userId }: { userId: string }) {
           <button 
             type="button" 
             onClick={() => setScanning(false)}
-            style={{ width: '100%', padding: '1rem', background: '#ef4444', color: 'white' }}
+            style={{ width: '100%', padding: '1rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', marginTop: '0.5rem', fontWeight: 'bold' }}
           >
             İptal
           </button>
         </div>
       )}
 
-      {loading && <p style={{ textAlign: 'center' }}>Aranıyor...</p>}
+      {loading && <p style={{ textAlign: 'center', marginTop: '1rem' }}>Aranıyor...</p>}
 
-      <div className={styles.resultsList}>
-        {results.map((book) => {
-          const info = book.volumeInfo
-          const cover = info.imageLinks?.thumbnail
-          
-          return (
-            <div key={book.id} className={styles.resultCard}>
-              <div className={styles.resultCover}>
-                {cover ? (
-                  <Image src={cover.replace('http:', 'https:')} alt={info.title} fill style={{ objectFit: 'cover' }} unoptimized />
-                ) : (
-                  <span style={{ fontSize: '10px', padding: '5px' }}>Kapak Yok</span>
-                )}
-              </div>
-              <div className={styles.resultInfo}>
-                <h3 className={styles.resultTitle}>{info.title}</h3>
-                <p className={styles.resultAuthor}>{info.authors?.join(', ')}</p>
-                <button type="button" onClick={() => openModal(book)} className={styles.addButton}>
-                  Seç
-                </button>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+      <motion.div variants={containerVariants} initial="hidden" animate="show" className={styles.resultsList}>
+        <AnimatePresence>
+          {results.map((book) => {
+            const info = book.volumeInfo
+            const cover = info.imageLinks?.thumbnail
+            
+            return (
+              <motion.div variants={itemVariants} key={book.id} className={styles.resultCard}>
+                <div className={styles.resultCover}>
+                  {cover ? (
+                    <Image src={cover.replace('http:', 'https:')} alt={info.title} fill style={{ objectFit: 'cover' }} unoptimized />
+                  ) : (
+                    <span style={{ fontSize: '10px', padding: '5px' }}>Kapak Yok</span>
+                  )}
+                </div>
+                <div className={styles.resultInfo}>
+                  <h3 className={styles.resultTitle}>{info.title}</h3>
+                  <p className={styles.resultAuthor}>{info.authors?.join(', ')}</p>
+                  <button type="button" onClick={() => openModal(book)} className={styles.addButton}>
+                    Seç
+                  </button>
+                </div>
+              </motion.div>
+            )
+          })}
+        </AnimatePresence>
+      </motion.div>
 
       {selectedBook && (
         <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={styles.modal}
+          >
             <h2 className={styles.modalTitle}>Kitap Durumu</h2>
             
             <div className={styles.formGroup}>
@@ -280,7 +299,7 @@ export default function AddForm({ userId }: { userId: string }) {
                 Kaydet
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
     </>
