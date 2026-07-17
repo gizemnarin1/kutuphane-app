@@ -17,5 +17,5 @@ export default async function LibraryPage({ searchParams }: { searchParams: { ta
     console.error('Error fetching books:', error)
   }
 
-  return <LibraryClient books={books} initialTab={tab} />
+  return <LibraryClient books={books || []} initialTab={tab} />
 }
