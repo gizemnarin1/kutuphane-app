@@ -36,13 +36,13 @@ export function PageTransition({ children }: { children: ReactNode }) {
 
   return (
     <div {...handlers} style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="popLayout">
         <motion.div
           key={pathname}
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          exit={{ opacity: 0, x: -10 }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
           style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
         >
           {children}

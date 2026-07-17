@@ -56,17 +56,25 @@ export default function ProfileClient({ initialUser }: { initialUser: any }) {
         <motion.div variants={itemVariants} className="glass" style={{ padding: '1.5rem' }}>
           <h3 style={{ marginBottom: '1rem' }}>Uygulama Ayarları</h3>
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Tema</span>
-            <select 
-              style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--foreground)' }}
-              value={theme} 
-              onChange={(e) => setTheme(e.target.value)}
+          <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+            <button 
+              onClick={() => setTheme('light')}
+              style={{ padding: '1rem', background: theme === 'light' ? 'var(--primary)' : 'var(--background)', color: theme === 'light' ? '#fff' : 'var(--foreground)', border: '1px solid var(--border)', borderRadius: '12px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s' }}
             >
-              <option value="system">Sistem</option>
-              <option value="light">Aydınlık</option>
-              <option value="dark">Karanlık</option>
-            </select>
+              Aydınlık Mod (Light)
+            </button>
+            <button 
+              onClick={() => setTheme('dark')}
+              style={{ padding: '1rem', background: theme === 'dark' ? 'var(--primary)' : 'var(--background)', color: theme === 'dark' ? '#fff' : 'var(--foreground)', border: '1px solid var(--border)', borderRadius: '12px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              Karanlık Mod (Dark)
+            </button>
+            <button 
+              onClick={() => setTheme('system')}
+              style={{ padding: '1rem', background: theme === 'system' ? 'var(--primary)' : 'var(--background)', color: theme === 'system' ? '#fff' : 'var(--foreground)', border: '1px solid var(--border)', borderRadius: '12px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              Sistem Teması
+            </button>
           </div>
         </motion.div>
 
