@@ -17,6 +17,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: { ta
   }
 
   const filteredBooks = books?.filter(book => {
+    if (tab === 'aktif') return book.status === 'Şu an Okuyorum'
     if (tab === 'istek') return book.status === 'İstek Listemde'
     if (tab === 'okunanlar') return book.status === 'Kütüphanemde' && book.is_read
     return book.status === 'Kütüphanemde' // Default kutuphane (All owned)
@@ -29,6 +30,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: { ta
         
         <div className={styles.tabs}>
           <a href="/library?tab=kutuphane" className={`${styles.tab} ${tab === 'kutuphane' ? styles.activeTab : ''}`}>Tümü</a>
+          <a href="/library?tab=aktif" className={`${styles.tab} ${tab === 'aktif' ? styles.activeTab : ''}`}>Şu an Okuyorum</a>
           <a href="/library?tab=okunanlar" className={`${styles.tab} ${tab === 'okunanlar' ? styles.activeTab : ''}`}>Okuduklarım</a>
           <a href="/library?tab=istek" className={`${styles.tab} ${tab === 'istek' ? styles.activeTab : ''}`}>İstek Listem</a>
         </div>

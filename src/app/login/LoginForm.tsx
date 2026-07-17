@@ -8,6 +8,7 @@ import styles from './login.module.css'
 export default function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isLogin, setIsLogin] = useState(true)
@@ -32,6 +33,11 @@ export default function LoginForm() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              full_name: fullName
+            }
+          }
         })
         if (error) throw error
         alert('Kayıt başarılı! Lütfen giriş yapın.')
@@ -48,6 +54,21 @@ export default function LoginForm() {
     <form onSubmit={handleSubmit} className={styles.form}>
       {error && <div className={styles.error}>{error}</div>}
       
+      {!isLogin && (
+        <div className={styles.inputGroup}>
+          <label htmlFor="fullName">Ad Soyad</label>
+          <input
+            id="fullName"
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required={!isLogin}
+            className={styles.input}
+            placeholder="Adınız Soyadınız"
+          />
+        </div>
+      )}
+
       <div className={styles.inputGroup}>
         <label htmlFor="email">E-posta</label>
         <input

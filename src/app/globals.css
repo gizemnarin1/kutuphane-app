@@ -1,16 +1,32 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
-  --primary: #0ea5e9;
-  --primary-hover: #0284c7;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
   --surface: #ffffff;
-  --border: #e2e8f0;
+  --border: rgba(226, 232, 240, 0.8);
   --text-muted: #64748b;
-  --radius: 16px;
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.5);
+  --radius: 20px;
+  --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+[data-theme='dark'] {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --primary: #6366f1;
+  --primary-hover: #818cf8;
+  --surface: #18181b;
+  --border: rgba(39, 39, 42, 0.8);
+  --text-muted: #a1a1aa;
+  --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --glass-bg: rgba(24, 24, 27, 0.6);
+  --glass-border: rgba(63, 63, 70, 0.4);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 * {
@@ -27,6 +43,35 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+/* Background gradient blobs for premium feel */
+body::before, body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: -1;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+body::before {
+  top: -10%;
+  left: -10%;
+  width: 50vw;
+  height: 50vw;
+  background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+}
+
+body::after {
+  bottom: -10%;
+  right: -10%;
+  width: 40vw;
+  height: 40vw;
+  background: radial-gradient(circle, #a855f7 0%, transparent 70%);
 }
 
 a {
@@ -41,12 +86,20 @@ button {
   font-family: inherit;
 }
 
-/* Global Utility Classes */
+/* Premium Glassmorphism Utility */
 .glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm), var(--glass-highlight);
+  border-radius: var(--radius);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass:hover {
+  box-shadow: var(--shadow-md), var(--glass-highlight);
+  border-color: rgba(99, 102, 241, 0.3);
 }
 
 .container {

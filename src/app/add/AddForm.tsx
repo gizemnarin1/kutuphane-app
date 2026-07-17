@@ -19,6 +19,7 @@ export default function AddForm({ userId }: { userId: string }) {
   const [status, setStatus] = useState('Kütüphanemde')
   const [isRead, setIsRead] = useState(false)
   const [rating, setRating] = useState('')
+  const [readDate, setReadDate] = useState(() => new Date().toISOString().split('T')[0])
   
   const supabase = createClient()
   const router = useRouter()
@@ -50,12 +51,58 @@ export default function AddForm({ userId }: { userId: string }) {
     if (!searchQuery) return
     setLoading(true)
     try {
-      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}`)
-      const data = await res.json()
-      setResults(data.items || [])
+      const cleanQuery = searchQuery.trim()
+      const isISBN = /^[0-9-]+$/.test(cleanQuery)
+      const qParam = isISBN 
+        ? `isbn:${cleanQuery.replace(/-/g, '')}+OR+${encodeURIComponent(cleanQuery)}` 
+        : encodeURIComponent(cleanQuery)
+
+      let foundItems: any[] = []
+
+      // 1. Önce Google Books API'yi dene
+      try {
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${qParam}&maxResults=10`)
+        if (res.ok) {
+          const data = await res.json()
+          foundItems = data.items || []
+        }
+      } catch (e) {
+        console.warn('Google Books fetch error:', e)
+      }
+
+      // 2. Google Books sonuç bulamazsa veya Kota (429) dolduysa OpenLibrary'e geç
+      if (foundItems.length === 0) {
+        console.log('OpenLibrary Fallback kullanılıyor...')
+        try {
+          const olRes = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(cleanQuery)}&limit=10`)
+          if (olRes.ok) {
+            const olData = await olRes.json()
+            if (olData.docs && olData.docs.length > 0) {
+              // OpenLibrary formatını Google Books formatına çevir (Arayüz bozulmasın diye)
+              foundItems = olData.docs.map((doc: any) => ({
+                id: doc.key || Math.random().toString(),
+                volumeInfo: {
+                  title: doc.title,
+                  authors: doc.author_name,
+                  industryIdentifiers: doc.isbn ? [{ type: 'ISBN_13', identifier: doc.isbn[0] }] : [],
+                  imageLinks: doc.cover_i ? { thumbnail: `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` } : null
+                }
+              }))
+            }
+          }
+        } catch (e) {
+          console.warn('OpenLibrary fetch error:', e)
+        }
+      }
+
+      setResults(foundItems)
+
+      if (foundItems.length === 0) {
+        alert('Bu aramayla eşleşen kitap bulunamadı. Lütfen farklı kelimelerle veya yazar adıyla tekrar deneyin.')
+      }
     } catch (err) {
-      console.error('API Error:', err)
-      alert('Arama sırasında hata oluştu.')
+      console.error('Genel Arama Hatası:', err)
+      alert('Arama sırasında beklenmedik bir hata oluştu.')
     } finally {
       setLoading(false)
     }
@@ -71,6 +118,7 @@ export default function AddForm({ userId }: { userId: string }) {
     setStatus('Kütüphanemde')
     setIsRead(false)
     setRating('')
+    setReadDate(new Date().toISOString().split('T')[0])
   }
 
   const handleAddBook = async () => {
@@ -92,9 +140,9 @@ export default function AddForm({ userId }: { userId: string }) {
         cover_url: coverUrl,
         isbn: isbn,
         status,
-        is_read: isRead,
+        is_read: status === 'Şu an Okuyorum' ? false : isRead,
         rating: rating || null,
-        read_date: isRead ? new Date().toISOString().split('T')[0] : null
+        read_date: isRead ? readDate : null
       })
 
       if (error) throw error
@@ -180,21 +228,36 @@ export default function AddForm({ userId }: { userId: string }) {
               <select className={styles.select} value={status} onChange={(e) => setStatus(e.target.value)}>
                 <option value="Kütüphanemde">Kütüphanemde</option>
                 <option value="İstek Listemde">İstek Listemde</option>
+                <option value="Şu an Okuyorum">Şu an Okuyorum</option>
               </select>
             </div>
 
             {status === 'Kütüphanemde' && (
-              <div className={styles.formGroup}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                  <input 
-                    type="checkbox" 
-                    checked={isRead} 
-                    onChange={(e) => setIsRead(e.target.checked)} 
-                    style={{ width: '1.25rem', height: '1.25rem' }}
-                  />
-                  Bu kitabı okudum
-                </label>
-              </div>
+              <>
+                <div className={styles.formGroup}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={isRead} 
+                      onChange={(e) => setIsRead(e.target.checked)} 
+                      style={{ width: '1.25rem', height: '1.25rem' }}
+                    />
+                    Bu kitabı okudum
+                  </label>
+                </div>
+
+                {isRead && (
+                  <div className={styles.formGroup}>
+                    <label>Okuma Tarihi</label>
+                    <input 
+                      type="date" 
+                      className={styles.input} 
+                      value={readDate} 
+                      onChange={(e) => setReadDate(e.target.value)} 
+                    />
+                  </div>
+                )}
+              </>
             )}
 
             {isRead && (

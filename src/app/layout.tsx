@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import BottomNav from "@/components/BottomNav";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { PageTransition } from "@/components/PageTransition";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,8 +29,6 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-import BottomNav from "@/components/BottomNav";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -37,12 +38,17 @@ export default function RootLayout({
     <html
       lang="tr"
       className={`${geistSans.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
     >
       <body>
-        <div style={{ paddingBottom: '70px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {children}
-        </div>
-        <BottomNav />
+        <ThemeProvider>
+          <div style={{ paddingBottom: '70px', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <PageTransition>
+              {children}
+            </PageTransition>
+          </div>
+          <BottomNav />
+        </ThemeProvider>
       </body>
     </html>
   );

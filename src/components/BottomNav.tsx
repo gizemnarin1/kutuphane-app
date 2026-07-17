@@ -25,6 +25,10 @@ export default function BottomNav() {
         <PlusCircle size={24} />
         <span>Ekle</span>
       </Link>
+      <Link href="/profile" className={`${styles.navItem} ${pathname === '/profile' ? styles.active : ''}`}>
+        <Settings size={24} />
+        <span>Profil</span>
+      </Link>
     </nav>
   )
 }
