@@ -7,15 +7,52 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 
+// Extend WindowEventMap to include beforeinstallprompt
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
+}
+
 export default function ProfileClient({ initialUser }: { initialUser: any }) {
   const router = useRouter()
   const supabase = createClient()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
 
   useEffect(() => {
     setMounted(true)
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault()
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e as BeforeInstallPromptEvent)
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    }
   }, [])
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return
+    
+    // Show the install prompt
+    deferredPrompt.prompt()
+    
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null)
+    }
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -77,6 +114,17 @@ export default function ProfileClient({ initialUser }: { initialUser: any }) {
             </button>
           </div>
         </motion.div>
+
+        {deferredPrompt && (
+          <motion.div variants={itemVariants}>
+            <button 
+              onClick={handleInstallClick} 
+              style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, var(--primary), #a855f7)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(168, 85, 247, 0.4)' }}
+            >
+              Uygulamayı Ana Ekrana Ekle
+            </button>
+          </motion.div>
+        )}
 
         <motion.div variants={itemVariants}>
           <button 
