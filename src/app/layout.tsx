@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   title: "Kişisel Kütüphane",
   description: "Kişisel Kütüphane Uygulaması",
   manifest: "/manifest.json",
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

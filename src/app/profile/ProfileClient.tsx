@@ -44,16 +44,16 @@ export default function ProfileClient({ initialUser }: { initialUser: any }) {
         <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Profilim</h1>
       </header>
 
-      <motion.main variants={containerVariants} initial="hidden" animate="show" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        <motion.div variants={itemVariants} className="glass" style={{ padding: '2rem', textAlign: 'center' }}>
+      <motion.main variants={containerVariants} initial="hidden" animate="show" style={{ padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <motion.div variants={itemVariants} className="glass" style={{ padding: '1.5rem', textAlign: 'center' }}>
           <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), #a855f7)', margin: '0 auto 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '2rem', fontWeight: 'bold' }}>
             {fullName.charAt(0).toUpperCase()}
           </div>
           <h2 style={{ margin: 0 }}>{fullName}</h2>
-          <p style={{ color: 'var(--text-muted)' }}>{email}</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{email}</p>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="glass" style={{ padding: '1.5rem' }}>
+        <motion.div variants={itemVariants} className="glass" style={{ padding: '1rem' }}>
           <h3 style={{ marginBottom: '1rem' }}>Uygulama Ayarları</h3>
           
           <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>

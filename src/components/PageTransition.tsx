@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname, useRouter } from 'next/navigation'
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { useSwipeable } from 'react-swipeable'
 
 const routes = ['/', '/library', '/add', '/profile']
@@ -10,6 +10,12 @@ const routes = ['/', '/library', '/add', '/profile']
 export function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
+
+  useEffect(() => {
+    routes.forEach((route) => {
+      router.prefetch(route)
+    })
+  }, [router])
 
   const handleSwipe = (dir: 'Left' | 'Right') => {
     const currentIndex = routes.indexOf(pathname)
